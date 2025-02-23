@@ -2,12 +2,12 @@
   "name": "hello-prisma",
   "license": "MIT",
   "scripts": {
-    "dev": "node index.js",
+    "dev": "node src/index.js",
     "queries": "ts-node ./src/queries.ts",
     "caching": "ts-node ./src/caching.ts",
     "realtime": "ts-node ./src/realtime.ts",
     "build": "prisma generate",
-    "vercel-build": "prisma generate && node index.js"
+    "vercel-build": "prisma generate && node src/index.js"
   },
   "dependencies": {
     "@prisma/client": "6.4.1",
