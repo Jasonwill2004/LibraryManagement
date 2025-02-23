@@ -1,0 +1,26 @@
+{
+  "name": "hello-prisma",
+  "license": "MIT",
+  "scripts": {
+    "dev": "node index.js",
+    "queries": "ts-node ./src/queries.ts",
+    "caching": "ts-node ./src/caching.ts",
+    "realtime": "ts-node ./src/realtime.ts",
+    "build": "prisma generate",
+    "vercel-build": "prisma generate && node index.js"
+  },
+  "dependencies": {
+    "@prisma/client": "6.4.1",
+    "@prisma/extension-accelerate": "1.2.2",
+    "@prisma/extension-pulse": "1.2.2",
+    "@types/node": "22.13.4",
+    "cors": "^2.8.5",
+    "dotenv": "16.4.7",
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "prisma": "6.4.1",
+    "ts-node": "10.9.2",
+    "typescript": "5.7.3"
+  }
+}
