@@ -1,72 +1,75 @@
 require("dotenv").config();
 const { PrismaClient } = require("@prisma/client");
-const express = require("express"); // Import express
-const app = express(); // Initialize express
-const port = 3004; // Port number
-
+const express = require("express");
 const cors = require("cors");
+const { logger, logWithFunctionName } = require("./logger");
 
+const app = express();
+const port = process.env.PORT || 3004;
 const prisma = new PrismaClient();
+
 app.use(express.json());
 app.use(cors());
 
-const verifyApiKey = (req, res, next) => {
-    const apiKey = req.header("x-api-key");
-    if (!apiKey || apiKey !== process.env.API_KEY) {
-      return res.status(401).json({ error: "Unauthorized: Invalid API Key" });
-    }
-    next();
-  };
-  
+// Middleware for logging all requests
+app.use((req, res, next) => {
+  logWithFunctionName("info", `[${req.method}] ${req.url} - Request received`, "RequestLogger");
+  next();
+});
 
-app.get("/getuser",verifyApiKey, async (req, res) => {
+// API Key Middleware
+const verifyApiKey = (req, res, next) => {
+  const apiKey = req.header("x-api-key");
+  if (!apiKey || apiKey !== process.env.API_KEY) {
+    logWithFunctionName("warn", `[${req.method}] ${req.url} - Unauthorized API Key`, "verifyApiKey");
+    return res.status(401).json({ error: "Unauthorized: Invalid API Key" });
+  }
+  next();
+};
+
+// Get all members
+app.get("/getuser", verifyApiKey, async (req, res) => {
   try {
     const allUsers = await prisma.Member.findMany();
-    res.send(allUsers);
+    logWithFunctionName("info", "[GET /getuser] - Retrieved all members", "getAllMembers");
+    res.json(allUsers);
   } catch (error) {
-    res.send(error);
+    logWithFunctionName("error", "[GET /getuser] - Error fetching members: " + error.message, "getAllMembers");
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
-app.post("/adduser",verifyApiKey, async (req, res) => {
-  const { mem_name, mem_email, mem_phone } = req.body;
-  await prisma.Member.create({
-    data: {
-      mem_name,
-      mem_email,
-      mem_phone,
-    },
-  });
+// Add a new member
+app.post("/adduser", verifyApiKey, async (req, res) => {
+  try {
+    const { mem_name, mem_email, mem_phone } = req.body;
+    await prisma.Member.create({ data: { mem_name, mem_email, mem_phone } });
 
-  res.send("User added successfully");
+    logWithFunctionName("info", `[POST /adduser] - User added: ${mem_name}`, "addUser");
+    res.status(201).send("User added successfully");
+  } catch (error) {
+    logWithFunctionName("error", "[POST /adduser] - Error adding user: " + error.message, "addUser");
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 });
 
-app.post("/issuance",verifyApiKey, async (req, res) => {
-  const {
-    issuance_id,
-    book_id,
-    issuance_date,
-    issuance_member,
-    issued_by,
-    target_return_date,
-    issuance_status,
-  } = req.body;
-  await prisma.Issuance.create({
-    data: {
-      issuance_id,
-      book_id,
-      issuance_date,
-      issuance_member,
-      issued_by,
-      target_return_date,
-      issuance_status,
-    },
-  });
+// Issue a book
+app.post("/issuance", verifyApiKey, async (req, res) => {
+  try {
+    const { book_id, issuance_date, issuance_member, issued_by, target_return_date, issuance_status } = req.body;
+    await prisma.Issuance.create({
+      data: { book_id, issuance_date, issuance_member, issued_by, target_return_date, issuance_status },
+    });
 
-  res.send("Issuance added successfully");
+    logWithFunctionName("info", `[POST /issuance] - Issued book ${book_id} to member ${issuance_member}`, "issueBook");
+    res.status(201).send("Issuance added successfully");
+  } catch (error) {
+    logWithFunctionName("error", "[POST /issuance] - Error issuing book: " + error.message, "issueBook");
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 });
 
-app.post("/book",verifyApiKey, async (req, res) => {
+app.post("/book", verifyApiKey, async (req, res) => {
   try {
     const { book_name, book_launch_date, book_publisher } = req.body;
     console.log(req.body);
@@ -83,109 +86,87 @@ app.post("/book",verifyApiKey, async (req, res) => {
         book_publisher,
       },
     });
-
+    logWithFunctionName("info", `[POST /book] - added book ${book_name}`, "addBook");
     res.status(201).json(book);
   } catch (error) {
+    logWithFunctionName("error", "[POST /book] - Error adding book: " + error.message, "addBook");
     console.error("Error creating book:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
 
-app.get("/member/:date",verifyApiKey, async (req, res) => {
-  try {
-    const { date } = req.params; // Get the date from URL params
-
-    // Query Issuance table for members with the given return date
-    console.log(new Date(date));
-    const issuedMembers = await prisma.issuance.findMany({
-      where: {
-        target_return_date: date,
-      },
-      select: {
-        issuance_member: true,
-      },
-    });
-
-    console.log(issuedMembers);
-
-    // Extract member IDs
-    const memberIds = issuedMembers.map((record) => record.issuance_member);
-
-    // Query Member table for member details
-    const members = await prisma.member.findMany({
-      where: {
-        mem_id: { in: memberIds },
-      },
-    });
-
-    res.json(members); // Send result as JSON
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-});
-
-app.get("/books/:id",verifyApiKey, async (req, res) => {
+// Fetch books
+app.get("/books/:id", verifyApiKey, async (req, res) => {
   try {
     const book = await prisma.Book.findUnique({
       where: { book_id: parseInt(req.params.id) },
     });
     if (!book) {
+      logWithFunctionName("warn", `[GET /books/${req.params.id}] - Book not found`, "getBookById");
       return res.status(404).json({ error: "Book not found" });
     }
+
+    logWithFunctionName("info", `[GET /books/${req.params.id}] - Book details retrieved`, "getBookById");
     res.json(book);
   } catch (error) {
+    logWithFunctionName("error", "[GET /books/:id] - Error fetching book: " + error.message, "getBookById");
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
+// Fetch members with pending returns on a specific date
+app.get("/member/:date", verifyApiKey, async (req, res) => {
+  try {
+    const { date } = req.params;
+    const issuedMembers = await prisma.Issuance.findMany({
+      where: { target_return_date: date },
+      select: { issuance_member: true },
+    });
+
+    const memberIds = issuedMembers.map((record) => record.issuance_member);
+    const members = await prisma.Member.findMany({ where: { mem_id: { in: memberIds } } });
+
+    logWithFunctionName("info", `[GET /member/${date}] - Retrieved members with pending returns`, "getMembersWithPendingReturns");
+    res.json(members);
+  } catch (error) {
+    logWithFunctionName("error", "[GET /member/:date] - Error fetching members: " + error.message, "getMembersWithPendingReturns");
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// Update issuance return date
 app.put("/issuance/:id", verifyApiKey, async (req, res) => {
-    try {
-      const { id } = req.params;
-      const { target_return_date } = req.body;
-  
-      // Validate input
-      if (!target_return_date) {
-        return res.status(400).json({ error: "target_return_date is required" });
-      }
-  
-      // Check if the issuance record exists
-      const existingIssuance = await prisma.Issuance.findUnique({
-        where: { issuance_id: parseInt(id) },
-      });
-  
-      if (!existingIssuance) {
-        return res.status(404).json({ error: "Issuance record not found" });
-      }
-  
-      // Update only the return date
-      const updatedIssuance = await prisma.Issuance.update({
-        where: { issuance_id: parseInt(id) },
-        data: {
-          target_return_date: target_return_date,
-        },
-      });
-  
-      res.json({
-        message: "Return date updated successfully",
-        issuance: updatedIssuance,
-      });
-    } catch (error) {
-      console.error("Error updating return date:", error);
-      res.status(500).json({ error: "Internal Server Error" });
+  try {
+    const { id } = req.params;
+    const { target_return_date } = req.body;
+
+    if (!target_return_date) {
+      logWithFunctionName("warn", `[PUT /issuance/${id}] - target_return_date is required`, "updateIssuanceReturnDate");
+      return res.status(400).json({ error: "target_return_date is required" });
     }
-  });
 
-// main()
-//   .then(async () => {
-//     await prisma.$disconnect()
-//   })
-//   .catch(async (e) => {
-//     console.error(e)
-//     await prisma.$disconnect()
-//     process.exit(1)
-//   })
+    const existingIssuance = await prisma.Issuance.findUnique({ where: { issuance_id: parseInt(id) } });
 
+    if (!existingIssuance) {
+      logWithFunctionName("warn", `[PUT /issuance/${id}] - Issuance record not found`, "updateIssuanceReturnDate");
+      return res.status(404).json({ error: "Issuance record not found" });
+    }
+
+    await prisma.Issuance.update({
+      where: { issuance_id: parseInt(id) },
+      data: { target_return_date },
+    });
+
+    logWithFunctionName("info", `[PUT /issuance/${id}] - Updated return date to ${target_return_date}`, "updateIssuanceReturnDate");
+    res.json({ message: "Return date updated successfully" });
+  } catch (error) {
+    logWithFunctionName("error", "[PUT /issuance/:id] - Error updating return date: " + error.message, "updateIssuanceReturnDate");
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// Start the server
 app.listen(port, () => {
-  console.log(`Example app listening at http://localhost:${port}`);
+  logWithFunctionName("info", `[Server] - Application started on port ${port}`, "startServer");
+  console.log(`Server running on http://localhost:${port}`);
 });

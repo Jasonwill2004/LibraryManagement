@@ -1,0 +1,16 @@
+[2025-02-25 22:12:48] [INFO] [N/A] - [Server] - Application started on port 3004
+[2025-02-25 22:14:19] [INFO] [N/A] - [POST] /book - Request received
+[2025-02-25 22:18:57] [INFO] [N/A] - [Server] - Application started on port 3004
+[2025-02-25 22:19:01] [INFO] [N/A] - [POST] /book - Request received
+[2025-02-25 22:19:02] [INFO] [N/A] - [POST /book] - added book Pride and disciple
+[2025-02-25 22:19:56] [INFO] [N/A] - [POST] /adduser - Request received
+[2025-02-25 22:19:56] [INFO] [N/A] - [POST /adduser] - User added: adarsh bhai
+[2025-02-25 22:58:50] [INFO] [startServer] - [Server] - Application started on port 3004
+[2025-02-25 22:59:17] [INFO] [RequestLogger] - [POST] /adduser - Request received
+[2025-02-25 22:59:18] [INFO] [addUser] - [POST /adduser] - User added: adarsh bhai
+[2025-02-25 23:30:53] [INFO] [startServer] - [Server] - Application started on port 3004
+[2025-02-25 23:31:20] [INFO] [RequestLogger] - [GET] /member/2025-03-27 - Request received
+[2025-02-25 23:31:21] [INFO] [getMembersWithPendingReturns] - [GET /member/2025-03-27] - Retrieved members with pending returns
+[2025-02-25 18:15:03] [INFO] [startServer] - [Server] - Application started on port 3004
+[2025-02-25 18:19:56] [INFO] [startServer] - [Server] - Application started on port 3004
+[2025-02-25 18:20:09] [INFO] [RequestLogger] - [GET] / - Request received
