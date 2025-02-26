@@ -6,7 +6,7 @@
     "queries": "ts-node ./src/queries.ts",
     "caching": "ts-node ./src/caching.ts",
     "realtime": "ts-node ./src/realtime.ts",
-    "build": "prisma generate",
+    "postinstall": "prisma generate",
     "vercel-build": "prisma generate && node index.js"
   },
   "dependencies": {
