@@ -21,7 +21,7 @@ Implemented a logging mechanism using the Winston library. The log pattern is `[
 - **Logger Configuration**: `src/logger.js`
 - **Log File**: `logs/app.log`
 
-  ##Deplyment
+  ## Deplyment
  [Deployed Link](library-management-snowy-iota.vercel.app)
 [Note try to filter with the date 27th march or 30th march 2025 ]
 
