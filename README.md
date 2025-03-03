@@ -22,6 +22,6 @@ Implemented a logging mechanism using the Winston library. The log pattern is `[
 - **Log File**: `logs/app.log`
 
   ## Deplyment
- [Deployed Link](library-management-snowy-iota.vercel.app)
+ [Deployed Link](https://library-management-snowy-iota.vercel.app/)
 [Note try to filter with the date 27th march or 30th march 2025 ]
 
